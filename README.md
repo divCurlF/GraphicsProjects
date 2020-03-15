@@ -3,6 +3,12 @@ A collection of graphics projects written in WebGL.
 
 # TODO
 
+## General
+
+- Remove code repetition
+  - One html file for phong shading, blinn phong, gpu shading etc.
+  - One file for input handling
+
 ## Bouncy Balls
 - Users to change size of balls (easy)
 - Users to pick color of balls (easy)
