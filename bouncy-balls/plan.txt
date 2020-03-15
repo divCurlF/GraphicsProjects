@@ -1,0 +1,11 @@
+1. Create sphere object?
+    - Sphere can call draw on the simpleModelling js file to draw.
+    - Needs to store a transformation matrix that is updated during keyframe
+    - needs to store position and velocity.
+
+2. In the animate function, loop over all spheres and update the respective positions.
+    - Position and velocity update will be on each individual sphere, and is a private method to that sphere.
+    - Pass in the global time differential so that its consistent across all spheres.
+
+3. need to actually figure out the dimensions of the view box because that makes no fucking sense.
+

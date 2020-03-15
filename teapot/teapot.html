@@ -1,0 +1,227 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <title>Teapot</title>
+    <meta charset="utf-8">
+</head>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+<link rel="stylesheet" href="teapot.css">
+<script id="shader-vs-skybox" type="x-shader/x-vertex">
+        attribute vec3 aVertexPosition;
+
+        uniform mat4 uMVMatrix;
+        uniform mat4 uPMatrix;
+
+        varying vec3 vertPos;
+
+        void main(void) {
+            vertPos = aVertexPosition;
+            gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        }
+</script>
+
+<script id="shader-fs-skybox" type="x-shader/x-fragment">
+    precision mediump float;
+    varying vec3 vertPos;
+    uniform samplerCube uCubeSampler;
+
+    void main(void) {
+        gl_FragColor = textureCube(uCubeSampler, vertPos);
+    }
+</script>
+
+
+
+<script id="shader-vs-teapot-reflective" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+    void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
+        vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
+        vNormal = normalize(aVertexNormal);
+    }
+</script>
+<script id="shader-fs-teapot-reflective" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform mat3 uNMatrix;
+    varying vec3 vPosition;
+    varying vec3 vNormal;
+    uniform mat3 uInverseViewTransform;
+    uniform samplerCube uSkyboxSampler;
+    void main(void) {
+        
+        vec3 normalEye = normalize(uNMatrix * vNormal);
+        
+        vec3 eyeDirection = normalize(vPosition);
+        
+        // uInverseViewTransform used to make sure the camera is correctly rotated.
+        vec3 R = uInverseViewTransform * reflect(eyeDirection, normalEye);
+        
+        vec4 vSkyboxColor = textureCube(uSkyboxSampler, R);
+        
+        gl_FragColor = vSkyboxColor;
+    }
+</script>
+<script id="shader-vs-teapot-refractive" type="x-shader/x-vertex">
+    attribute vec3 aVertexPosition;
+    attribute vec3 aVertexNormal;
+
+    uniform mat4 uMVMatrix;
+    uniform mat3 uNMatrix;
+    uniform mat4 uPMatrix;
+
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+
+    void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
+        vPosition = normalize(vertexPositionEye4.xyz / vertexPositionEye4.w);
+        vNormal = normalize(aVertexNormal);
+        vNormal = normalize(uNMatrix * vNormal);
+    }
+    
+</script>
+<script id="shader-fs-teapot-refractive" type="x-shader/x-fragment">
+    precision mediump float;
+    varying vec3 vPosition;
+    varying vec3 vNormal;
+    
+    uniform mat3 uInverseViewTransform;
+    uniform samplerCube uSkyboxSampler;
+
+    void main(void) {
+        
+        float iofr = 1.03;
+
+        vec3 R = uInverseViewTransform*refract(vPosition, vNormal, iofr);
+        
+        vec4 refractColor = textureCube(uSkyboxSampler, R);
+
+        vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
+
+        refractColor = mix(refractColor, white, 0.5);
+        
+        gl_FragColor = refractColor;
+    }
+</script>
+<script id="shader-vs-teapot-blinn-phong" type="x-shader/x-vertex">
+    attribute vec3 aVertexNormal;
+    attribute vec3 aVertexPosition;
+
+    uniform mat4 uMVMatrix;
+    uniform mat4 uPMatrix;
+    uniform mat3 uNMatrix;
+
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+
+    void main(void) {
+        vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
+        vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
+        vNormal = normalize(aVertexNormal);
+        vNormal = normalize(uNMatrix * vNormal);
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+    }
+</script>
+<script id="shader-fs-teapot-blinn-phong" type="x-shader/x-fragment">
+    precision mediump float;
+
+    // Light Data
+    uniform vec3 uLightPosition;
+    uniform vec3 uAmbientLightColor;
+    uniform vec3 uDiffuseLightColor;
+    uniform vec3 uSpecularLightColor;
+    uniform mat3 uInverseViewTransform;
+    const float uShininess = 100.0;
+
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+
+    void main(void) {
+      vec3 uKAmbient = vec3(1.0, 0, 0.3);
+      vec3 uKDiffuse = vec3(1.0, 0, 1.0);
+      vec3 uKSpecular = vec3(0.5, 0.0, 0.3);
+
+      vec3 vectorToLightSource = normalize(uLightPosition - vPosition);
+      
+      float diffuseLightWeightning = max(dot(vNormal, vectorToLightSource), 0.0);
+                                         
+      vec3 reflectionVector = normalize(reflect(-vectorToLightSource, vNormal));
+      
+      vec3 viewVectorEye = -normalize(vPosition);
+    
+      vec3 halfwayVector = normalize(viewVectorEye + vectorToLightSource);
+
+      float hDotn = max(dot(halfwayVector, normalize(vNormal)), 0.0);
+    
+      float specularLightWeightning = pow(hDotn, uShininess);
+        
+      // Sum up all three reflection components and send to the fragment shader
+      gl_FragColor = vec4(((uAmbientLightColor*uKAmbient)
+              + (uDiffuseLightColor*uKDiffuse) * diffuseLightWeightning
+              + (uSpecularLightColor*uKSpecular) * specularLightWeightning),1.0);
+    }
+
+</script>
+<script src="gl-matrix-min.js"></script>
+<script src="webgl-utils.js"></script>
+<script src="teapot.js"></script>
+<script src="SkyBox.js"></script>
+<script src="Teapot.js"></script>
+<script src="teapot-utils.js"></script>
+<script src="control-buttons.js"></script>
+<script src="keyboard-handler.js"></script>
+<body id="body" onload="startup();">
+<div class="container-fluid">
+    <div class="row" style="margin-top: 3%">
+        <div class="col-md-7 d-flex justify-content-center" style="margin-top: 2%; margin-bottom: 2%">
+            <canvas id="myGLCanvas"></canvas>
+        </div>
+        <div class="col-md-5">
+            <h1 style="font-weight: bold; text-align: center">Teapot</h1>
+            <p style="font-size: 16px; text-align: center">A demonstration of environment mapping techniques in WebGL.</p>
+            <div></div>
+            <hr>
+            <div>
+            </div>
+            <div class="btns">
+                <h2 style="text-align: center; margin: 2% 0px">Camera Rotation</h2>
+                <span class="control btn btn-primary" id="cam-up-btn""><kbd>W</kbd> Camera Up</span>
+                <span class="control btn btn-primary" id="cam-left-btn""><kbd>A</kbd> Camera Left</span>
+                <span class="control btn btn-primary" id="cam-down-btn""><kbd>S</kbd> Camera Down</span>
+                <span class="control btn btn-primary" id="cam-right-btn""><kbd>D</kbd> Camera Right</span>
+            </div>
+            <hr>
+            <div class="btns">
+                <h2 style="text-align: center; margin: 2% 0px">Teapot Rotation</h2>
+                <span class="control btn btn-primary" id="tp-up-btn"><kbd>↑</kbd> Teapot Up</span>
+                <span class="control btn btn-primary" id="tp-left-btn"><kbd>←</kbd> Teapot Left</span>
+                <span class="control btn btn-primary" id="tp-down-btn"><kbd>↓</kbd> Teapot Down</span>
+                <span class="control btn btn-primary" id="tp-right-btn"><kbd>→</kbd> RoTeapot Right</span>
+            </div>
+            <hr>
+            <div>
+                <h2 style="text-align: center; margin: 2% 0px">Shading Style</h2>
+                <form>
+                    <input type="radio" class="button" id="reflective" name="shading" checked></input>
+                    <label for="reflective">Reflective</label>
+                    <input type="radio" class="button" id="refractive" name="shading"></input>
+                    <label for="refractive">Refractive</label>
+                    <input type="radio" class="button" id="blinn-phong" name="shading"></input>
+                    <label for="blinn-phong">Blinn-Phong</label>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+</body>
+</html>

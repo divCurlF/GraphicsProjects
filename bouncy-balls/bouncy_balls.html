@@ -1,0 +1,112 @@
+<!DOCTYPE HTML> 
+<html lang="en"> 
+<head>
+<title>Bouncy Balls</title>
+<meta charset="utf-8"> 
+</head>
+<link rel="stylesheet" href="bouncy-ball.css">
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.0/css/bootstrap.min.css">
+    
+<script id="shader-phong-phong-vs" type="x-shader/x-vertex">
+  attribute vec3 aVertexNormal;
+  attribute vec3 aVertexPosition;
+
+  uniform mat4 uMVMatrix;
+  uniform mat4 uPMatrix;
+  uniform mat3 uNMatrix;
+
+  varying vec3 vNormal;
+  varying vec3 vPosition;
+
+  void main(void) {
+    vec4 vertexPositionEye4 = uMVMatrix * vec4(aVertexPosition, 1.0);
+    vPosition = vertexPositionEye4.xyz / vertexPositionEye4.w;
+    vNormal = normalize(uNMatrix * aVertexNormal);
+    gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+  }
+</script>
+    
+<script id="shader-phong-phong-fs" type="x-shader/x-fragment">
+    precision mediump float;
+
+    // Light Data
+    uniform vec3 uLightPosition;
+    uniform vec3 uAmbientLightColor;
+    uniform vec3 uDiffuseLightColor;
+    uniform vec3 uSpecularLightColor;
+    uniform vec3 uAmbientMaterialColor;
+    uniform vec3 uDiffuseMaterialColor;
+    uniform vec3 uSpecularMaterialColor;
+    
+    uniform float uShininess;
+
+    varying vec3 vNormal;
+    varying vec3 vPosition;
+
+    void main(void) {
+    
+      vec3 vectorToLightSource = normalize(uLightPosition - vPosition);
+      
+      // Calculate n dot l for diffuse lighting
+      float diffuseLightWeightning = max(dot(vNormal, 
+                                      vectorToLightSource), 0.0);
+                                         
+      // Calculate the reflection vector (r) that is needed for specular light
+      vec3 reflectionVector = normalize(reflect(-vectorToLightSource, 
+                                               vNormal));
+      
+      // The camera in eye coordinates is located in the origin and is pointing
+      // along the negative z-axis. Calculate viewVector (v) 
+      // in eye coordinates as:
+      // (0.0, 0.0, 0.0) - vPosition
+      vec3 viewVectorEye = -normalize(vPosition);
+      
+      float rdotv = max(dot(reflectionVector, viewVectorEye), 0.0);
+      
+      float specularLightWeightning = pow(rdotv, uShininess);
+  
+      // Sum up all three reflection components and send to the fragment shader
+      gl_FragColor = vec4(((uAmbientLightColor*uAmbientMaterialColor)
+                  + (uDiffuseLightColor*uDiffuseMaterialColor) * diffuseLightWeightning
+                  + (uSpecularLightColor*uSpecularMaterialColor) * specularLightWeightning),1.0);
+    }
+</script>
+    
+    
+<script src="gl-matrix-min.js"></script> 
+<script src="webgl-utils.js"></script>
+<script src="sphereModel.js"></script>  
+<script src="bouncy_ball.js"></script>
+<script src="Ball.js"></script>
+<script src="Box.js"></script>
+<script src="bouncy_ball-utils.js"></script>
+<script src="keyboard-handler.js"></script>
+
+<div class="WTF">
+<body onload="startup();">
+
+<div id="canvas-container">
+  <canvas id="myGLCanvas"></canvas>
+</div>
+<div style="justify-content: center; text-align: center; margin-left: 20%; margin-right: 20%">
+  <div style="color:white ">
+      <h1>Bouncy Balls</h1>
+      <h2>Instructions</h2>
+      <h4>Press <kbd>Space</kbd> or click the button below to spawn some balls.</h4>
+  </div>
+  <button type="button" class="btn btn-primary btn-lg btn-block" id="spawn">Spawn!</button>
+  <div style="margin-bottom: 20px"></div>
+  <div style="padding-bottom: 40px">
+    <form>
+      <h2 style="color:white">Number of balls to spawn</h2>
+      <input type="number" value="5" class=" btn-lg btn-block" id="num-balls">
+      <div style="margin-bottom: 20px"></div>
+      <button type="button" class="btn btn-primary btn-lg btn-block" id="reset">Reset!</button>
+    </form>
+  </div>
+</div>
+</body>
+
+</body>
+</div>
+</html>

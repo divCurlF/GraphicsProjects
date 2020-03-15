@@ -1,0 +1,28 @@
+canvas {
+    width: 80vw;
+    height: 80vh;
+    display: inline-block;
+    background-color: black;
+}
+
+#canvas-container {
+    width: 100%;
+    text-align:center;
+ }
+
+body {
+    border: 0;
+    background-color: black;
+}
+
+.WTF {
+    background-color: black;
+}
+
+.controls {
+    color: white;
+    background-color: black
+}
+
+
+

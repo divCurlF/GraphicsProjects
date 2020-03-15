@@ -1,0 +1,43 @@
+canvas {
+    width: 90vw;
+    height: 70vh;
+    display: inline-block;
+    background-color: black;
+}
+
+#canvas-container {
+    width: 100%;
+    text-align:center;
+ }
+
+span.control {
+    margin-left: 1%; 
+    margin-right: 1%;
+    font-size: 24px;
+}
+
+div.control {
+    margin-left: 1%; 
+    margin-right: 1%;
+    font-size: 24px;
+}
+
+input[type=range] {
+	 width: 100% !important;
+}
+
+.wrapper {
+    display:flex;
+    justify-content: center;
+    text-align: center;
+}
+
+.slidercaption {
+    display: inline-block;
+    float: left;
+  }
+  
+.slidercontainer{
+    float: left;
+    display: inline-block;
+}
